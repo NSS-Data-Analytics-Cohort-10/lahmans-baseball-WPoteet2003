@@ -119,9 +119,19 @@ FROM teams
 WHERE WSWin = 'Y' AND yearid >= 1970
 ORDER BY w ASC;
 
---Skipping part 3 for rn
+WITH max_wins AS(
+	SELECT yearid, MAX(w)
+	FROM teams
+	GROUP BY yearid
+	HAVING yearid >= 1970
+)
+SELECT *
+FROM teams
+INNER JOIN max_wins
+USING(yearid)
+WHERE WSWIN = 'Y'
 
--- Answers: Seattle Mariners in 2001 with 116 games.  St. Loius Cardinals in 2006 with 83 games.
+-- Answers: Seattle Mariners in 2001 with 116 games.  St. Loius Cardinals in 2006 with 83 games. 46 Teams out of 117.
 
 -- 8. Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
 
@@ -154,12 +164,12 @@ OR ((a.awardid LIKE 'TSN%' AND a.lgid = 'AL') AND (am.awardid LIKE 'TSN%' AND am
 -- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
 
 WITH max_hrs AS(
-	SELECT playerid, MAX(hr), COUNT(yearid)
+	SELECT playerid, MAX(hr), COUNT(DISTINCT(yearid))
 	FROM batting
 	GROUP BY playerid
-	HAVING MAX(hr) > 0 AND COUNT(yearid) >= 10
+	HAVING MAX(hr) > 0 AND COUNT(DISTINCT(yearid)) >= 10
 )
-SELECT namefirst, namelast, hr, max
+SELECT * --namefirst, namelast, hr, max
 FROM batting
 FULL JOIN max_hrs
 USING(playerid)
@@ -192,6 +202,12 @@ ORDER BY yearid, w DESC;
 
 --Answer: A correlation could be present, but it seems very unlikely to have a large one, if one at all.
 
+WITH ws_winners AS( 
+	SELECT *
+	FROM teams
+	WHERE wswin = 'Y';
+)
+
 -- 13. It is thought that since left-handed pitchers are more rare, causing batters to face them less often, that they are more effective. Investigate this claim and present evidence to either support or dispute this claim. First, determine just how rare left-handed pitchers are compared with right-handed pitchers. Are left-handed pitchers more likely to win the Cy Young Award? Are they more likely to make it into the hall of fame?
 
 SELECT throws, COUNT(throws)
@@ -222,3 +238,50 @@ GROUP BY throws, inducted, category
 HAVING throws IS NOT NULL AND inducted LIKE 'Y' AND category = 'Player';
 
 -- 23%, which is actually less than the baseball average.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT distinct(p.namefirst), p.namelast, teamid
+FROM awardsmanagers AS am1
+INNER JOIN awardsmanagers AS am2
+USING (playerid)
+INNER JOIN people AS p
+USING (playerid)
+INNER JOIN managers AS m
+USING (playerid)
+WHERE am1.awardid = 'TSN Manager of the Year'
+AND am2.awardid = 'TSN Manager of the Year'
+AND ((am1.lgid = 'AL' AND am2.lgid = 'NL') 
+OR (am1.lgid = 'NL' AND am2.lgid = 'AL'))
+AND (m.yearid = am1.yearid);
+
+
+
+--[ A B ] 1
+--[ A A ] 2
+--[ B A ] 3
+--[ B B ] 4
+
+--Say we want any combination where both A and B are present? Which two rows do we need?
+
+
+
+
+
+
